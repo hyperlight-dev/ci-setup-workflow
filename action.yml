@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+
+name: "Hyperlight Workflow Setup"
+description: "Common setup steps for GitHub workflows in the Hyperlight project"
+
+inputs:
+  rust-toolchain:
+    description: "(Default: 1.74.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
+    required: false
+    default: "1.74.0"
+
+runs:
+  using: composite
+  steps:
+
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.rust-toolchain }}
+        components: clippy, rustfmt
+    
+    - uses: extractions/setup-just@v2
+      with:
+        just-version: "1.27"
+
+    ### Linux setup ###
+
+    - name: Install clang-tools (Linux mariner)
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        if command -v dnf > /dev/null 2>&1; then
+          if command -v clang-cl > /dev/null 2>&1; then
+            echo "clang already installed"
+          else
+            sudo dnf remove clang -y || true
+            sudo dnf install clang17 -y
+            sudo dnf install clang17-tools-extra -y
+          fi
+          if command -v lld-link /dev/null 2>&1; then
+            echo "lld already installed"
+          else
+            sudo dnf remove lld -y || true
+            sudo dnf install lld17 -y
+          fi
+          clang-cl --version
+          lld-link --version
+        fi
+      shell: bash
+
+    - name: Install clang-tools (Linux ubuntu)
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        if command -v apt > /dev/null 2>&1; then
+          if [ -d "/usr/lib/llvm-17" ]; then
+            echo "clang 17 and llvm 17 already installed"
+          else
+            wget https://apt.llvm.org/llvm.sh 
+            chmod +x ./llvm.sh
+            sudo ./llvm.sh 17 all
+            sudo ln -s /usr/lib/llvm-17/bin/clang-cl /usr/bin/clang-cl
+            sudo ln -s /usr/lib/llvm-17/bin/clang /usr/bin/clang
+            sudo ln -s /usr/lib/llvm-17/bin/llvm-lib /usr/bin/llvm-lib
+            sudo ln -s /usr/lib/llvm-17/bin/lld-link /usr/bin/lld-link
+            sudo ln -s /usr/lib/llvm-17/bin/llvm-ml /usr/bin/llvm-ml
+            sudo ln -s /usr/lib/llvm-17/bin/ld.lld /usr/bin/ld.lld
+          fi
+          clang-cl --version
+          lld-link --version
+          ld.lld --version
+        fi
+      shell: bash
+
+      # This is needed to build the rust guests
+    - name: Install x86_64-pc-windows-msvc target
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        rustup target add x86_64-pc-windows-msvc
+      shell: bash
+
+    - name: Install x86_64-unknown-none target
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        rustup target add x86_64-unknown-none
+      shell: bash
+
+    - name: Set up env vars (Linux)
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        set -x
+        if command -v dnf > /dev/null 2>&1; then
+          echo "Detected mariner / hyperv"
+          echo "HYPERV_SHOULD_BE_PRESENT=true" >> $GITHUB_ENV
+          echo "HYPERV_SHOULD_HAVE_STABLE_API=false" >> $GITHUB_ENV
+          ls -al /dev/mshv
+          whoami
+        else
+          echo "Detected Ubuntu / kvm"
+          echo "KVM_SHOULD_BE_PRESENT=true" >> $GITHUB_ENV
+          sudo ls -al /dev/kvm
+          sudo chgrp $(whoami) /dev/kvm
+          sudo ls -al /dev/kvm
+        fi
+        echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
+      shell: bash
+
+    ### Windows setup ###
+
+    - name: Enable WHP on Windows
+      if: ${{ (runner.os == 'Windows') }}
+      run:  Enable-WindowsOptionalFeature -Online -FeatureName HyperVisorPlatform
+      shell: pwsh
+
+    - name: Install x86_64-pc-windows-msvc target (Windows)
+      if: ${{ (runner.os == 'Windows') }}
+      run: |
+        rustup target add x86_64-pc-windows-msvc
+      shell: pwsh
+
+    - name: Install x86_64-unknown-none target (Windows)
+      if: ${{ (runner.os == 'Windows') }}
+      run: |
+        rustup target add x86_64-unknown-none
+      shell: pwsh
+
+    - name: Set up env vars (Windows)
+      if: ${{ (runner.os == 'Windows') }}
+      run: |
+        echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
+      shell: pwsh
