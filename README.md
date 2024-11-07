@@ -22,7 +22,7 @@ jobs:
 
 | Name | Description |
 | ---- | ----------- |
-| `rust-toolchain` | The rust toolchain version to use. |
+| `rust-toolchain` | The rust toolchain version to use. Defaults to using `rust-toolchain.toml` |
 
 ## Overview
 
@@ -32,7 +32,6 @@ This action performs the following steps:
 - Installs additional rust components like clippy, rustfmt, ect
 - Installs Just
 - Sets up the clang toolchain on Linux machines (this should probably get moved into the hosted runner image setup...)
-- Installs the `x86_64-pc-windows-msvc` rust target for cross-compilation on Linux machines
 - Sets up environment variables needed to build / run tests based on the machine's configuration. 
 
 ## Code of Conduct

@@ -5,15 +5,14 @@ description: "Common setup steps for GitHub workflows in the Hyperlight project"
 
 inputs:
   rust-toolchain:
-    description: "(Default: 1.74.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
+    description: "Rust toolchain specification to install (defaults to using rust-toolchain.toml) - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
     required: false
-    default: "1.74.0"
 
 runs:
   using: composite
   steps:
 
-    - uses: dtolnay/rust-toolchain@master
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         toolchain: ${{ inputs.rust-toolchain }}
         components: clippy, rustfmt
@@ -69,19 +68,6 @@ runs:
         fi
       shell: bash
 
-      # This is needed to build the rust guests
-    - name: Install x86_64-pc-windows-msvc target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-      shell: bash
-
-    - name: Install x86_64-unknown-none target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-unknown-none
-      shell: bash
-
     - name: Set up env vars (Linux)
       if: ${{ (runner.os == 'Linux') }}
       run: |
@@ -107,18 +93,6 @@ runs:
     - name: Enable WHP on Windows
       if: ${{ (runner.os == 'Windows') }}
       run:  Enable-WindowsOptionalFeature -Online -FeatureName HyperVisorPlatform
-      shell: pwsh
-
-    - name: Install x86_64-pc-windows-msvc target (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-      shell: pwsh
-
-    - name: Install x86_64-unknown-none target (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup target add x86_64-unknown-none
       shell: pwsh
 
     - name: Set up env vars (Windows)
