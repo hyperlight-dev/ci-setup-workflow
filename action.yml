@@ -56,13 +56,74 @@ runs:
             wget https://apt.llvm.org/llvm.sh 
             chmod +x ./llvm.sh
             sudo ./llvm.sh 17 all
-            sudo ln -s /usr/lib/llvm-17/bin/clang-cl /usr/bin/clang-cl
-            sudo ln -s /usr/lib/llvm-17/bin/clang /usr/bin/clang
-            sudo ln -s /usr/lib/llvm-17/bin/llvm-lib /usr/bin/llvm-lib
-            sudo ln -s /usr/lib/llvm-17/bin/lld-link /usr/bin/lld-link
-            sudo ln -s /usr/lib/llvm-17/bin/llvm-ml /usr/bin/llvm-ml
-            sudo ln -s /usr/lib/llvm-17/bin/ld.lld /usr/bin/ld.lld
           fi
+
+          if [ -f /usr/lib/llvm-17/bin/clang-cl ]; then
+            if [ ! -L /usr/bin/clang-cl ]; then
+                sudo ln -s /usr/lib/llvm-17/bin/clang-cl /usr/bin/clang-cl
+            else
+                echo "clang-cl already linked"
+            fi 
+          else
+            echo "Error: /usr/lib/llvm-17/bin/clang-cl does not exist."
+            exit 1
+          fi
+
+          if [ -f /usr/lib/llvm-17/bin/clang ]; then
+            if [ ! -L /usr/bin/clang ]; then
+                sudo ln -s /usr/lib/llvm-17/bin/clang /usr/bin/clang
+            else
+                echo "clang already linked"
+            fi 
+          else
+            echo "Error: /usr/lib/llvm-17/bin/clang does not exist."
+            exit 1
+          fi
+
+          if [ -f /usr/lib/llvm-17/bin/llvm-lib ]; then
+            if [ ! -L /usr/bin/llvm-lib ]; then
+                sudo ln -s /usr/lib/llvm-17/bin/llvm-lib /usr/bin/llvm-lib
+            else
+                echo "llvm-lib already linked"
+            fi 
+          else
+            echo "Error: /usr/lib/llvm-17/bin/llvm-lib does not exist."
+            exit 1
+          fi
+
+          if [ -f /usr/lib/llvm-17/bin/lld-link ]; then
+            if [ ! -L /usr/bin/lld-link ]; then
+                sudo ln -s /usr/lib/llvm-17/bin/lld-link /usr/bin/lld-link
+            else
+                echo "lld-link already linked"
+            fi 
+          else
+            echo "Error: /usr/lib/llvm-17/bin/lld-link does not exist."
+            exit 1
+          fi
+
+          if [ -f /usr/lib/llvm-17/bin/llvm-ml ]; then
+            if [ ! -L /usr/bin/llvm-ml ]; then
+                sudo ln -s /usr/lib/llvm-17/bin/llvm-ml /usr/bin/llvm-ml
+            else
+                echo "llvm-ml already linked"
+            fi 
+          else
+            echo "Error: /usr/lib/llvm-17/bin/llvm-ml does not exist."
+            exit 1
+          fi
+
+          if [ -f /usr/lib/llvm-17/bin/ld.lld ]; then
+            if [ ! -L /usr/bin/ld.lld ]; then
+                sudo ln -s /usr/lib/llvm-17/bin/ld.lld /usr/bin/ld.lld
+            else
+                echo "ld.lld already linked"
+            fi 
+          else
+            echo "Error: /usr/lib/llvm-17/bin/ld.lld does not exist."
+            exit 1
+          fi
+
           clang-cl --version
           lld-link --version
           ld.lld --version
