@@ -160,7 +160,7 @@ runs:
           sudo chgrp $(whoami) /dev/kvm
           sudo ls -al /dev/kvm
         fi
-        echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
+        echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       shell: bash
 
     ### Windows setup ###
@@ -185,5 +185,5 @@ runs:
     - name: Set up env vars (Windows)
       if: ${{ (runner.os == 'Windows') }}
       run: |
-        echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
+        echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       shell: pwsh
