@@ -162,6 +162,25 @@ runs:
         fi
         echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       shell: bash
+    # see https://github.com/firecracker-microvm/firecracker/blob/c75c86103d464f61851134eb3211b35323be4ffc/docs/prod-host-setup.md#linux-61-boot-time-regressions
+    - name: Apply perf fixes for KVM on kernel 6.x
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        if command -v apt > /dev/null 2>&1; then
+          kernel_version=$(uname -r)
+          if [[ "$kernel_version" == 6.* ]]; then
+            if [[ $(cat /sys/devices/system/cpu/vulnerabilities/itlb_multihit) == "Not affected" ]]; then
+              KVM_VENDOR_MOD=$(lsmod |grep -P "^kvm_(amd|intel)" | awk '{print $1}')
+              sudo modprobe -r $KVM_VENDOR_MOD kvm
+              sudo modprobe kvm nx_huge_pages=never
+              sudo modprobe $KVM_VENDOR_MOD
+            fi
+            if [ -f /sys/fs/cgroup/cgroup.controllers ]; then
+              sudo mount -o remount,favordynmods /sys/fs/cgroup
+            fi
+          fi
+        fi
+      shell: bash
 
     ### Windows setup ###
 
