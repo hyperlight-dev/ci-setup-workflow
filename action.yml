@@ -146,19 +146,8 @@ runs:
     - name: Set up env vars (Linux)
       if: ${{ (runner.os == 'Linux') }}
       run: |
-        set -x
-        if command -v dnf > /dev/null 2>&1; then
-          echo "Detected mariner / hyperv"
-          echo "HYPERV_SHOULD_BE_PRESENT=true" >> $GITHUB_ENV
-          echo "HYPERV_SHOULD_HAVE_STABLE_API=false" >> $GITHUB_ENV
-          ls -al /dev/mshv
-          whoami
-        else
-          echo "Detected Ubuntu / kvm"
-          echo "KVM_SHOULD_BE_PRESENT=true" >> $GITHUB_ENV
-          sudo ls -al /dev/kvm
-          sudo chgrp $(whoami) /dev/kvm
-          sudo ls -al /dev/kvm
+        if [ -e /dev/kvm ]; then
+          sudo adduser $(whoami) kvm
         fi
         echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       shell: bash
