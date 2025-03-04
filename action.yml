@@ -17,6 +17,7 @@ runs:
       with:
         toolchain: ${{ inputs.rust-toolchain }}
         components: clippy, rustfmt
+        targets: [x86_64-pc-windows-msvc, x86_64-unknown-none] # needed for building .exe and elf guest
     
     - uses: extractions/setup-just@v2
       with:
@@ -130,19 +131,6 @@ runs:
         fi
       shell: bash
 
-      # This is needed to build the rust guests
-    - name: Install x86_64-pc-windows-msvc target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-      shell: bash
-
-    - name: Install x86_64-unknown-none target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-unknown-none
-      shell: bash
-
     - name: Set up env vars (Linux)
       if: ${{ (runner.os == 'Linux') }}
       run: |
@@ -157,18 +145,6 @@ runs:
     - name: Enable WHP on Windows
       if: ${{ (runner.os == 'Windows') }}
       run:  Enable-WindowsOptionalFeature -Online -FeatureName HyperVisorPlatform
-      shell: pwsh
-
-    - name: Install x86_64-pc-windows-msvc target (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-      shell: pwsh
-
-    - name: Install x86_64-unknown-none target (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup target add x86_64-unknown-none
       shell: pwsh
 
     - name: Set up env vars (Windows)
