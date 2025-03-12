@@ -50,77 +50,77 @@ runs:
       if: ${{ (runner.os == 'Linux') }}
       run: |
         if command -v apt > /dev/null 2>&1; then
-          if [ -d "/usr/lib/llvm-17" ]; then
-            echo "clang 17 and llvm 17 already installed"
+          if [ -d "/usr/lib/llvm-18" ]; then
+            echo "clang 18 and llvm 18 already installed"
           else
             wget https://apt.llvm.org/llvm.sh 
             chmod +x ./llvm.sh
-            sudo ./llvm.sh 17 all
+            sudo ./llvm.sh 18 all
           fi
 
-          if [ -f /usr/lib/llvm-17/bin/clang-cl ]; then
+          if [ -f /usr/lib/llvm-18/bin/clang-cl ]; then
             if [ ! -L /usr/bin/clang-cl ]; then
-                sudo ln -s /usr/lib/llvm-17/bin/clang-cl /usr/bin/clang-cl
+                sudo ln -s /usr/lib/llvm-18/bin/clang-cl /usr/bin/clang-cl
             else
                 echo "clang-cl already linked"
             fi 
           else
-            echo "Error: /usr/lib/llvm-17/bin/clang-cl does not exist."
+            echo "Error: /usr/lib/llvm-18/bin/clang-cl does not exist."
             exit 1
           fi
 
-          if [ -f /usr/lib/llvm-17/bin/clang ]; then
+          if [ -f /usr/lib/llvm-18/bin/clang ]; then
             if [ ! -L /usr/bin/clang ]; then
-                sudo ln -s /usr/lib/llvm-17/bin/clang /usr/bin/clang
+                sudo ln -s /usr/lib/llvm-18/bin/clang /usr/bin/clang
             else
                 echo "clang already linked"
             fi 
           else
-            echo "Error: /usr/lib/llvm-17/bin/clang does not exist."
+            echo "Error: /usr/lib/llvm-18/bin/clang does not exist."
             exit 1
           fi
 
-          if [ -f /usr/lib/llvm-17/bin/llvm-lib ]; then
+          if [ -f /usr/lib/llvm-18/bin/llvm-lib ]; then
             if [ ! -L /usr/bin/llvm-lib ]; then
-                sudo ln -s /usr/lib/llvm-17/bin/llvm-lib /usr/bin/llvm-lib
+                sudo ln -s /usr/lib/llvm-18/bin/llvm-lib /usr/bin/llvm-lib
             else
                 echo "llvm-lib already linked"
             fi 
           else
-            echo "Error: /usr/lib/llvm-17/bin/llvm-lib does not exist."
+            echo "Error: /usr/lib/llvm-18/bin/llvm-lib does not exist."
             exit 1
           fi
 
-          if [ -f /usr/lib/llvm-17/bin/lld-link ]; then
+          if [ -f /usr/lib/llvm-18/bin/lld-link ]; then
             if [ ! -L /usr/bin/lld-link ]; then
-                sudo ln -s /usr/lib/llvm-17/bin/lld-link /usr/bin/lld-link
+                sudo ln -s /usr/lib/llvm-18/bin/lld-link /usr/bin/lld-link
             else
                 echo "lld-link already linked"
             fi 
           else
-            echo "Error: /usr/lib/llvm-17/bin/lld-link does not exist."
+            echo "Error: /usr/lib/llvm-18/bin/lld-link does not exist."
             exit 1
           fi
 
-          if [ -f /usr/lib/llvm-17/bin/llvm-ml ]; then
+          if [ -f /usr/lib/llvm-18/bin/llvm-ml ]; then
             if [ ! -L /usr/bin/llvm-ml ]; then
-                sudo ln -s /usr/lib/llvm-17/bin/llvm-ml /usr/bin/llvm-ml
+                sudo ln -s /usr/lib/llvm-18/bin/llvm-ml /usr/bin/llvm-ml
             else
                 echo "llvm-ml already linked"
             fi 
           else
-            echo "Error: /usr/lib/llvm-17/bin/llvm-ml does not exist."
+            echo "Error: /usr/lib/llvm-18/bin/llvm-ml does not exist."
             exit 1
           fi
 
-          if [ -f /usr/lib/llvm-17/bin/ld.lld ]; then
+          if [ -f /usr/lib/llvm-18/bin/ld.lld ]; then
             if [ ! -L /usr/bin/ld.lld ]; then
-                sudo ln -s /usr/lib/llvm-17/bin/ld.lld /usr/bin/ld.lld
+                sudo ln -s /usr/lib/llvm-18/bin/ld.lld /usr/bin/ld.lld
             else
                 echo "ld.lld already linked"
             fi 
           else
-            echo "Error: /usr/lib/llvm-17/bin/ld.lld does not exist."
+            echo "Error: /usr/lib/llvm-18/bin/ld.lld does not exist."
             exit 1
           fi
 
