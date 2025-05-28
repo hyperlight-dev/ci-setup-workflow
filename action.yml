@@ -20,7 +20,7 @@ runs:
     
     - uses: extractions/setup-just@v3
       with:
-        just-version: "1.27"
+        just-version: "1.40"
 
     ### Linux setup ###
 
