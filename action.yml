@@ -5,9 +5,9 @@ description: "Common setup steps for GitHub workflows in the Hyperlight project"
 
 inputs:
   rust-toolchain:
-    description: "(Default: 1.74.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
+    description: "(Default: 1.85.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
     required: false
-    default: "1.74.0"
+    default: "1.85.0"
 
 runs:
   using: composite
@@ -20,7 +20,7 @@ runs:
     
     - uses: extractions/setup-just@v3
       with:
-        just-version: "1.27"
+        just-version: "1.40"
 
     ### Linux setup ###
 
@@ -143,6 +143,13 @@ runs:
         rustup target add x86_64-unknown-none
       shell: bash
 
+    # We do this in case there is toolchain skew between repos
+    - name: Install older rust toolchain(s)
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        rustup toolchain install 1.81.0
+      shell: bash
+
     - name: Set up env vars (Linux)
       if: ${{ (runner.os == 'Linux') }}
       run: |
@@ -177,6 +184,12 @@ runs:
       if: ${{ (runner.os == 'Windows') }}
       run: |
         rustup target add x86_64-unknown-none
+      shell: pwsh
+
+    - name: Install older rust toolchain(s) (Windows)
+      if: ${{ (runner.os == 'Windows') }}
+      run: |
+        rustup toolchain install 1.81.0
       shell: pwsh
 
     - name: Set up env vars (Windows)
