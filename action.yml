@@ -157,13 +157,12 @@ runs:
         if command -v dnf > /dev/null 2>&1; then
           echo "Detected mariner / hyperv"
           ls -al /dev/mshv
-          whoami
         else
           echo "Detected Ubuntu / kvm"
           sudo ls -al /dev/kvm
-          sudo chgrp $(whoami) /dev/kvm
-          sudo ls -al /dev/kvm
         fi
+        whoami
+        groups
         echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       shell: bash
 
