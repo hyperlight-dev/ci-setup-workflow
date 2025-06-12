@@ -162,6 +162,7 @@ runs:
           sudo ls -al /dev/kvm
         fi
         whoami
+        groups
         echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       shell: bash
 
