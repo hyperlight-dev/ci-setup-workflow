@@ -8,7 +8,6 @@ inputs:
     description: "(Default: 1.86.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
     required: false
     default: "1.86.0"
-
 runs:
   using: composite
   steps:
@@ -28,21 +27,21 @@ runs:
       if: ${{ (runner.os == 'Linux') }}
       run: |
         if command -v dnf > /dev/null 2>&1; then
-          if command -v clang-cl > /dev/null 2>&1; then
+          if command -v clang > /dev/null 2>&1; then
             echo "clang already installed"
           else
             sudo dnf remove clang -y || true
-            sudo dnf install clang17 -y
-            sudo dnf install clang17-tools-extra -y
+            sudo dnf install clang -y
+            sudo dnf install clang-tools-extra -y
           fi
-          if command -v lld-link /dev/null 2>&1; then
+          if command -v lld > /dev/null 2>&1; then
             echo "lld already installed"
           else
             sudo dnf remove lld -y || true
-            sudo dnf install lld17 -y
+            sudo dnf install lld -y
           fi
-          clang-cl --version
-          lld-link --version
+          clang --version
+          ld.lld --version
         fi
       shell: bash
 
@@ -55,18 +54,7 @@ runs:
           else
             wget https://apt.llvm.org/llvm.sh 
             chmod +x ./llvm.sh
-            sudo ./llvm.sh 18 all
-          fi
-
-          if [ -f /usr/lib/llvm-18/bin/clang-cl ]; then
-            if [ ! -L /usr/bin/clang-cl ]; then
-                sudo ln -s /usr/lib/llvm-18/bin/clang-cl /usr/bin/clang-cl
-            else
-                echo "clang-cl already linked"
-            fi 
-          else
-            echo "Error: /usr/lib/llvm-18/bin/clang-cl does not exist."
-            exit 1
+            sudo ./llvm.sh 18 clang clang-tools-extra
           fi
 
           if [ -f /usr/lib/llvm-18/bin/clang ]; then
@@ -80,39 +68,6 @@ runs:
             exit 1
           fi
 
-          if [ -f /usr/lib/llvm-18/bin/llvm-lib ]; then
-            if [ ! -L /usr/bin/llvm-lib ]; then
-                sudo ln -s /usr/lib/llvm-18/bin/llvm-lib /usr/bin/llvm-lib
-            else
-                echo "llvm-lib already linked"
-            fi 
-          else
-            echo "Error: /usr/lib/llvm-18/bin/llvm-lib does not exist."
-            exit 1
-          fi
-
-          if [ -f /usr/lib/llvm-18/bin/lld-link ]; then
-            if [ ! -L /usr/bin/lld-link ]; then
-                sudo ln -s /usr/lib/llvm-18/bin/lld-link /usr/bin/lld-link
-            else
-                echo "lld-link already linked"
-            fi 
-          else
-            echo "Error: /usr/lib/llvm-18/bin/lld-link does not exist."
-            exit 1
-          fi
-
-          if [ -f /usr/lib/llvm-18/bin/llvm-ml ]; then
-            if [ ! -L /usr/bin/llvm-ml ]; then
-                sudo ln -s /usr/lib/llvm-18/bin/llvm-ml /usr/bin/llvm-ml
-            else
-                echo "llvm-ml already linked"
-            fi 
-          else
-            echo "Error: /usr/lib/llvm-18/bin/llvm-ml does not exist."
-            exit 1
-          fi
-
           if [ -f /usr/lib/llvm-18/bin/ld.lld ]; then
             if [ ! -L /usr/bin/ld.lld ]; then
                 sudo ln -s /usr/lib/llvm-18/bin/ld.lld /usr/bin/ld.lld
@@ -123,24 +78,9 @@ runs:
             echo "Error: /usr/lib/llvm-18/bin/ld.lld does not exist."
             exit 1
           fi
-
-          clang-cl --version
-          lld-link --version
+          clang --version
           ld.lld --version
         fi
-      shell: bash
-
-      # This is needed to build the rust guests
-    - name: Install x86_64-pc-windows-msvc target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-      shell: bash
-
-    - name: Install x86_64-unknown-none target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-unknown-none
       shell: bash
 
     # We do this in case there is toolchain skew between repos
