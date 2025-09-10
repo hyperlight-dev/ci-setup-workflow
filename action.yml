@@ -5,10 +5,9 @@ description: "Common setup steps for GitHub workflows in the Hyperlight project"
 
 inputs:
   rust-toolchain:
-    description: "(Default: 1.89.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
+    description: "(Default: 1.86.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
     required: false
-    default: "1.89.0"
-
+    default: "1.86.0"
 runs:
   using: composite
   steps:
@@ -88,7 +87,8 @@ runs:
     - name: Install older rust toolchain(s)
       if: ${{ (runner.os == 'Linux') }}
       run: |
-        rustup toolchain install 1.89.0
+        rustup toolchain install 1.81.0
+        rustup toolchain install 1.85.0
       shell: bash
 
     - name: Set up env vars (Linux)
@@ -129,7 +129,8 @@ runs:
     - name: Install older rust toolchain(s) (Windows)
       if: ${{ (runner.os == 'Windows') }}
       run: |
-        rustup toolchain install 1.89.0
+        rustup toolchain install 1.81.0
+        rustup toolchain install 1.85.0
       shell: pwsh
 
     - name: Set up env vars (Windows)
