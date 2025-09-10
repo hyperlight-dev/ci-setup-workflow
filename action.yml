@@ -83,6 +83,13 @@ runs:
         fi
       shell: bash
 
+    # This is needed to build the rust guests
+    - name: Install x86_64-unknown-none target
+      if: ${{ (runner.os == 'Linux') }}
+      run: |
+        rustup target add x86_64-unknown-none
+      shell: bash
+
     # We do this in case there is toolchain skew between repos
     - name: Install older rust toolchain(s)
       if: ${{ (runner.os == 'Linux') }}
