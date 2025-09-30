@@ -8,6 +8,10 @@ inputs:
     description: "(Default: 1.86.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
     required: false
     default: "1.86.0"
+  just-version:
+    description: '(Default: 1.41) Version of just to install.'
+    required: false
+    default: '1.41'
 runs:
   using: composite
   steps:
@@ -19,7 +23,7 @@ runs:
     
     - uses: extractions/setup-just@v3
       with:
-        just-version: "1.40"
+        just-version: ${{ inputs.just-version }}
 
     ### Linux setup ###
 
