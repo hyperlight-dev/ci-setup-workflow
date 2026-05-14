@@ -21,7 +21,7 @@ runs:
         toolchain: ${{ inputs.rust-toolchain }}
         components: clippy, rustfmt
     
-    - uses: extractions/setup-just@v3
+    - uses: extractions/setup-just@v4
       with:
         just-version: ${{ inputs.just-version }}
 
