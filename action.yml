@@ -4,10 +4,12 @@ name: "Hyperlight Workflow Setup"
 description: "Common setup steps for GitHub workflows in the Hyperlight project"
 
 inputs:
-  rust-toolchain:
-    description: "(Default: 1.94.0) Rust toolchain specification to install - see https://rust-lang.github.io/rustup/concepts/toolchains.html#toolchain-specification"
+  toolchain-directories:
+    description: "One or two newline-separated directories containing Rust toolchain files."
+    required: true
+  default-directory:
+    description: "Directory selecting the global default compiler. Defaults to the first listed directory."
     required: false
-    default: "1.94.0"
   just-version:
     description: '(Default: 1.41) Version of just to install.'
     required: false
@@ -16,12 +18,87 @@ runs:
   using: composite
   steps:
 
-    - uses: dtolnay/rust-toolchain@master
+    - name: Validate toolchain directories
+      id: toolchains
+      shell: bash
+      env:
+        TOOLCHAIN_DIRECTORIES: ${{ inputs.toolchain-directories }}
+        DEFAULT_DIRECTORY: ${{ inputs.default-directory }}
+      run: |
+        fail() { echo "$*" >&2; exit 1; }
+        trim() { printf '%s\n' "$1" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//'; }
+        cd "$GITHUB_WORKSPACE"
+        directories=()
+        while IFS= read -r directory; do
+          [[ -n "$directory" ]] || continue
+          [[ -f "$directory/rust-toolchain.toml" || -f "$directory/rust-toolchain" ]] ||
+            fail "No toolchain file in directory: $directory"
+          directories+=("$(cd -- "$directory" && pwd -P)")
+        done <<< "$(trim "$TOOLCHAIN_DIRECTORIES")"
+        [[ "${#directories[@]}" -ge 1 && "${#directories[@]}" -le 2 ]] ||
+          fail "Supply one or two toolchain directories."
+        first="${directories[0]}"; second="${directories[1]:-}"
+        # Normalize paths so "." and an absolute path can select the same directory.
+        default="$(trim "$DEFAULT_DIRECTORY")"
+        requested_default="${default:-$first}"
+        default="$(cd -- "$requested_default" && pwd -P)" ||
+          fail "default-directory not found: $requested_default"
+        [[ -n "$default" && ( "$default" == "$first" || "$default" == "$second" ) ]] ||
+          fail "default-directory must be in toolchain-directories."
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          first="$(cygpath -m "$first")"
+          if [[ -n "$second" ]]; then second="$(cygpath -m "$second")"; fi
+          default="$(cygpath -m "$default")"
+        fi
+        printf 'first-directory=%s\nsecond-directory=%s\ndefault-directory=%s\n' \
+          "$first" "$second" "$default" >> "$GITHUB_OUTPUT"
+
+    - name: Install first Rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2
+      env:
+        RUSTUP_TOOLCHAIN: ''
+        RUSTUP_AUTO_INSTALL: '1'
+        CARGO_PROFILE_DEV_DEBUG: ${{ env.CARGO_PROFILE_DEV_DEBUG || '2' }}
       with:
-        toolchain: ${{ inputs.rust-toolchain }}
-        components: clippy, rustfmt
-    
-    - uses: extractions/setup-just@v4
+        rust-src-dir: ${{ steps.toolchains.outputs.first-directory }}
+        override: 'false'
+        cache: 'false'
+        matcher: 'false'
+        build-warnings: ''
+
+    - name: Install second Rust toolchain
+      if: ${{ steps.toolchains.outputs.second-directory != '' }}
+      uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2
+      env:
+        RUSTUP_TOOLCHAIN: ''
+        RUSTUP_AUTO_INSTALL: '1'
+        CARGO_PROFILE_DEV_DEBUG: ${{ env.CARGO_PROFILE_DEV_DEBUG || '2' }}
+      with:
+        rust-src-dir: ${{ steps.toolchains.outputs.second-directory }}
+        override: 'false'
+        cache: 'false'
+        matcher: 'false'
+        build-warnings: ''
+
+    - name: Select default Rust toolchain
+      shell: bash
+      env:
+        DEFAULT_DIRECTORY: ${{ steps.toolchains.outputs.default-directory }}
+        RUSTUP_AUTO_INSTALL: '0'
+      run: |
+        unset RUSTUP_TOOLCHAIN
+        cd -- "$DEFAULT_DIRECTORY"
+        selected="$(rustup show active-toolchain)"
+        selected="${selected%% (*}" # Strip the reason suffix, preserving spaces and parens in paths.
+        case "$selected" in
+          /*|\\*|[A-Za-z]:[\\/]*)
+            echo "Path-based toolchains cannot be the global default. Use a channel-based toolchain file." >&2
+            exit 1 ;;
+          '') echo "Rustup did not report an active toolchain." >&2; exit 1 ;;
+        esac
+        rustup default "$selected"
+
+    - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
       with:
         just-version: ${{ inputs.just-version }}
 
@@ -87,21 +164,6 @@ runs:
         fi
       shell: bash
 
-    # This is needed to build the rust guests
-    - name: Install x86_64-unknown-none target
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup target add x86_64-unknown-none
-      shell: bash
-
-    # We do this in case there is toolchain skew between repos
-    - name: Install older rust toolchain(s)
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        rustup toolchain install 1.85.0
-        rustup toolchain install 1.86.0
-      shell: bash
-
     - name: Set up env vars (Linux)
       if: ${{ (runner.os == 'Linux') }}
       run: |
@@ -123,25 +185,6 @@ runs:
     - name: Enable WHP on Windows
       if: ${{ (runner.os == 'Windows') }}
       run:  Enable-WindowsOptionalFeature -Online -FeatureName HyperVisorPlatform
-      shell: pwsh
-
-    - name: Install x86_64-pc-windows-msvc target (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup target add x86_64-pc-windows-msvc
-      shell: pwsh
-
-    - name: Install x86_64-unknown-none target (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup target add x86_64-unknown-none
-      shell: pwsh
-
-    - name: Install older rust toolchain(s) (Windows)
-      if: ${{ (runner.os == 'Windows') }}
-      run: |
-        rustup toolchain install 1.85.0
-        rustup toolchain install 1.86.0
       shell: pwsh
 
     - name: Set up env vars (Windows)
