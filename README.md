@@ -9,12 +9,14 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7
 
-    - uses: hyperlight-dev/ci-setup-workflow@v1.0.0
-        with:
-          rust-toolchain: "1.74.0"
+    - uses: hyperlight-dev/ci-setup-workflow@v2.0.0
+      with:
+        additional-toolchain-directory: guests
 ```
+
+Check out the consumer repository before invoking the action.
 
 ## Inputs
 
@@ -22,18 +24,32 @@ jobs:
 
 | Name | Description |
 | ---- | ----------- |
-| `rust-toolchain` | The rust toolchain version to use. |
+| `additional-toolchain-directory` | Optional directory containing another `rust-toolchain.toml` or `rust-toolchain` file. |
+| `just-version` | Version of Just to install; defaults to `1.41`. |
+
+The action reads `rust-toolchain.toml` or `rust-toolchain` from the repository
+root, falling back to stable when neither file exists. Set
+`additional-toolchain-directory` when another directory, such as a guest
+project, uses a different toolchain.
+
+Rustup reads the version, profile, components, and targets from each toolchain
+file. Put required extras such as `clippy`, `rustfmt`, `x86_64-unknown-none`,
+or cross-compilation targets in those files.
 
 ## Overview
 
 This action performs the following steps:
 
-- Installs the Rust tool chain at the specified version.
-- Installs additional rust components like clippy, rustfmt, ect
-- Installs Just
-- Sets up the clang toolchain on Linux machines (this should probably get moved into the hosted runner image setup...)
-- Installs the `x86_64-pc-windows-msvc` rust target for cross-compilation on Linux machines
+- Installs rustup if needed and the root toolchain (or stable by default).
+- Installs an additional toolchain when requested.
+- Installs the requested components and targets.
+- Installs Just.
+- Sets up the clang toolchain on Linux.
+- Enables the Windows Hypervisor Platform on Windows.
 - Sets up environment variables needed to build / run tests based on the machine's configuration. 
+
+Runners need Bash 5 and rustup or curl. The setup action installs rustup when
+missing and installs Bash through Homebrew on macOS.
 
 ## Code of Conduct
 
