@@ -13,10 +13,7 @@ jobs:
 
     - uses: hyperlight-dev/ci-setup-workflow@v2.0.0
       with:
-        toolchain-directories: |
-          .
-          guests
-        default-directory: .
+        additional-toolchain-directory: guests
 ```
 
 Check out the consumer repository before invoking the action.
@@ -27,29 +24,24 @@ Check out the consumer repository before invoking the action.
 
 | Name | Description |
 | ---- | ----------- |
-| `toolchain-directories` | One or two newline-separated directories containing `rust-toolchain.toml` or `rust-toolchain`. Required. |
-| `default-directory` | One of the listed directories, whose compiler becomes the global default. Defaults to the first entry. |
+| `additional-toolchain-directory` | Optional directory containing another `rust-toolchain.toml` or `rust-toolchain` file. |
 | `just-version` | Version of Just to install; defaults to `1.41`. |
 
-List each directory whose compiler you need installed. Paths are relative to the
-checked-out workspace; absolute paths also work. Blank lines and surrounding
-whitespace are ignored.
+The action reads `rust-toolchain.toml` or `rust-toolchain` from the repository
+root, falling back to stable when neither file exists. Set
+`additional-toolchain-directory` when another directory, such as a guest
+project, uses a different toolchain.
 
-Rustup reads the version, profile, components, and targets from each directory's
-toolchain file. Put required extras such as `clippy`, `rustfmt`,
-`x86_64-unknown-none`, or cross-compilation targets in those files.
-
-The selected compiler becomes the global default; no directory override is set.
-Consumer toolchain files still select the compiler when building in their directories.
-The default must select a channel or named toolchain, not an absolute compiler
-`path` inside the toolchain file. Absolute directory inputs are still supported.
+Rustup reads the version, profile, components, and targets from each toolchain
+file. Put required extras such as `clippy`, `rustfmt`, `x86_64-unknown-none`,
+or cross-compilation targets in those files.
 
 ## Overview
 
 This action performs the following steps:
 
-- Installs rustup if needed and the toolchains specified by the listed directories.
-- Sets the selected default compiler.
+- Installs rustup if needed and the root toolchain (or stable by default).
+- Installs an additional toolchain when requested.
 - Installs the requested components and targets.
 - Installs Just.
 - Sets up the clang toolchain on Linux.
