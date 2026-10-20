@@ -48,8 +48,12 @@ This action performs the following steps:
 - Enables the Windows Hypervisor Platform on Windows.
 - Sets up environment variables needed to build / run tests based on the machine's configuration. 
 
-Runners need Bash 5 and rustup or curl. The setup action installs rustup when
-missing and installs Bash through Homebrew on macOS.
+Runners need Bash 5 and rustup or curl. On macOS, the action discovers Homebrew
+on PATH or in its standard Apple Silicon and Intel locations, installing it
+noninteractively with the official installer when missing. Installing Homebrew
+requires the runner user to have the permissions required by that installer.
+The Rust setup action installs rustup when missing and Bash through Homebrew
+on macOS.
 
 ## Code of Conduct
 
