@@ -15,6 +15,33 @@ runs:
   using: composite
   steps:
 
+    - name: Ensure Homebrew is available (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        find_brew() {
+          command -v brew && return 0
+          for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+            if [ -x "$candidate" ]; then
+              echo "$candidate"
+              return 0
+            fi
+          done
+          return 1
+        }
+
+        if ! brew="$(find_brew)"; then
+          installer="$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          NONINTERACTIVE=1 /bin/bash -c "$installer"
+          if ! brew="$(find_brew)"; then
+            echo "::error::Homebrew installer completed but brew was not found."
+            exit 1
+          fi
+        fi
+
+        prefix="$("$brew" --prefix)"
+        printf '%s\n' "$prefix/bin" "$prefix/sbin" >> "$GITHUB_PATH"
+      shell: bash
+
     - name: Install Rust toolchain
       uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2
       with:
