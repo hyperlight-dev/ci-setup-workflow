@@ -36,10 +36,6 @@ runs:
         brew_is_writable() {
           prefix="$("$brew" --prefix)" || return 1
           repository="$("$brew" --repository)" || return 1
-          if [ ! -O "$repository" ]; then
-            echo "Homebrew repository is not owned by $(id -un): $repository" >&2
-            return 1
-          fi
           for directory in "$prefix" "$repository" \
               "$prefix/Cellar" "$prefix/Frameworks" "$prefix/bin" \
               "$prefix/etc" "$prefix/etc/bash_completion.d" \
