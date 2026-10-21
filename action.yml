@@ -29,7 +29,33 @@ runs:
           return 1
         }
 
-        if ! brew="$(find_brew)"; then
+        brew_is_writable() {
+          prefix="$("$brew" --prefix)" || return 1
+          repository="$("$brew" --repository)" || return 1
+          if [ ! -O "$repository" ]; then
+            echo "Homebrew repository is not owned by $(id -un): $repository" >&2
+            return 1
+          fi
+          for directory in "$prefix" "$repository" \
+              "$prefix/Cellar" "$prefix/Frameworks" "$prefix/bin" \
+              "$prefix/etc" "$prefix/etc/bash_completion.d" \
+              "$prefix/include" "$prefix/lib" "$prefix/lib/pkgconfig" \
+              "$prefix/opt" "$prefix/sbin" "$prefix/share" \
+              "$prefix/share/doc" "$prefix/share/man" \
+              "$prefix/share/man/man1" "$prefix/share/man/man3" \
+              "$prefix/share/man/man5" "$prefix/share/man/man7" \
+              "$prefix/share/zsh" "$prefix/share/zsh/site-functions" \
+              "$prefix/var/homebrew" "$prefix/var/homebrew/linked" \
+              "$prefix/var/homebrew/locks"; do
+            if [ -e "$directory" ] && [ ! -w "$directory" ]; then
+              echo "Homebrew directory is not writable: $directory" >&2
+              return 1
+            fi
+          done
+        }
+
+        if ! brew="$(find_brew)" || ! brew_is_writable; then
+          echo "Installing or repairing Homebrew for $(id -un)."
           installer="$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           NONINTERACTIVE=1 /bin/bash -c "$installer"
           if ! brew="$(find_brew)"; then
@@ -38,8 +64,20 @@ runs:
           fi
         fi
 
+        if ! brew_is_writable; then
+          echo "::error::Homebrew is still not writable after running its installer. Check runner sudo permissions and Homebrew ownership."
+          exit 1
+        fi
+
         prefix="$("$brew" --prefix)"
         printf '%s\n' "$prefix/bin" "$prefix/sbin" >> "$GITHUB_PATH"
+      shell: bash
+
+    - name: Preserve development debug information
+      run: |
+        if [ -z "${CARGO_PROFILE_DEV_DEBUG+x}" ]; then
+          echo "CARGO_PROFILE_DEV_DEBUG=2" >> "$GITHUB_ENV"
+        fi
       shell: bash
 
     - name: Install Rust toolchain
