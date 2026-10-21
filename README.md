@@ -36,6 +36,10 @@ Rustup reads the version, profile, components, and targets from each toolchain
 file. Put required extras such as `clippy`, `rustfmt`, `x86_64-unknown-none`,
 or cross-compilation targets in those files.
 
+The action defaults `CARGO_PROFILE_DEV_DEBUG` to `2` before Rust setup so
+development builds retain full debug information. Explicit caller values,
+including `0` or `false`, are preserved.
+
 ## Overview
 
 This action performs the following steps:
@@ -50,8 +54,11 @@ This action performs the following steps:
 
 Runners need Bash 5 and rustup or curl. On macOS, the action discovers Homebrew
 on PATH or in its standard Apple Silicon and Intel locations, installing it
-noninteractively with the official installer when missing. Installing Homebrew
-requires the runner user to have the permissions required by that installer.
+noninteractively with the official installer when missing. If an existing
+installation is not writable, the action reruns the official installer to repair
+its permissions and checks them again before continuing. Installation and repair
+require the runner user to have the permissions required by that installer,
+including noninteractive sudo access when ownership changes are needed.
 The Rust setup action installs rustup when missing and Bash through Homebrew
 on macOS.
 
