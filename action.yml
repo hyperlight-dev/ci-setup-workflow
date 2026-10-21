@@ -19,7 +19,11 @@ runs:
       if: ${{ runner.os == 'macOS' }}
       run: |
         find_brew() {
-          command -v brew && return 0
+          local candidate
+          if candidate="$(command -v brew)" && [ -x "$candidate" ]; then
+            echo "$candidate"
+            return 0
+          fi
           for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
             if [ -x "$candidate" ]; then
               echo "$candidate"
