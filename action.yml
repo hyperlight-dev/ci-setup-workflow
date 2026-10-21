@@ -15,64 +15,6 @@ runs:
   using: composite
   steps:
 
-    - name: Ensure Homebrew is available (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      run: |
-        find_brew() {
-          local candidate
-          if candidate="$(command -v brew)" && [ -x "$candidate" ]; then
-            echo "$candidate"
-            return 0
-          fi
-          for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-            if [ -x "$candidate" ]; then
-              echo "$candidate"
-              return 0
-            fi
-          done
-          return 1
-        }
-
-        brew_is_writable() {
-          prefix="$("$brew" --prefix)" || return 1
-          repository="$("$brew" --repository)" || return 1
-          for directory in "$prefix" "$repository" \
-              "$prefix/Cellar" "$prefix/Frameworks" "$prefix/bin" \
-              "$prefix/etc" "$prefix/etc/bash_completion.d" \
-              "$prefix/include" "$prefix/lib" "$prefix/lib/pkgconfig" \
-              "$prefix/opt" "$prefix/sbin" "$prefix/share" \
-              "$prefix/share/doc" "$prefix/share/man" \
-              "$prefix/share/man/man1" "$prefix/share/man/man3" \
-              "$prefix/share/man/man5" "$prefix/share/man/man7" \
-              "$prefix/share/zsh" "$prefix/share/zsh/site-functions" \
-              "$prefix/var/homebrew" "$prefix/var/homebrew/linked" \
-              "$prefix/var/homebrew/locks"; do
-            if [ -e "$directory" ] && [ ! -w "$directory" ]; then
-              echo "Homebrew directory is not writable: $directory" >&2
-              return 1
-            fi
-          done
-        }
-
-        if ! brew="$(find_brew)" || ! brew_is_writable; then
-          echo "Installing or repairing Homebrew for $(id -un)."
-          installer="$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          NONINTERACTIVE=1 /bin/bash -c "$installer"
-          if ! brew="$(find_brew)"; then
-            echo "::error::Homebrew installer completed but brew was not found."
-            exit 1
-          fi
-        fi
-
-        if ! brew_is_writable; then
-          echo "::error::Homebrew is still not writable after running its installer. Check runner sudo permissions and Homebrew ownership."
-          exit 1
-        fi
-
-        prefix="$("$brew" --prefix)"
-        printf '%s\n' "$prefix/bin" "$prefix/sbin" >> "$GITHUB_PATH"
-      shell: bash
-
     - name: Preserve development debug information
       run: |
         if [ -z "${CARGO_PROFILE_DEV_DEBUG+x}" ]; then
@@ -80,21 +22,61 @@ runs:
         fi
       shell: bash
 
+    - name: Add Cargo to PATH
+      run: |
+        if [ "$RUNNER_OS" = Windows ]; then
+          echo "${CARGO_HOME:-$USERPROFILE/.cargo}/bin" >> "$GITHUB_PATH"
+        else
+          echo "${CARGO_HOME:-$HOME/.cargo}/bin" >> "$GITHUB_PATH"
+        fi
+      shell: bash
+
+    - name: Ensure rustup is available
+      run: |
+        if ! command -v rustup > /dev/null 2>&1; then
+          args=(-y --no-modify-path --default-toolchain none)
+          if [ "$RUNNER_OS" = Windows ]; then
+            host=x86_64-pc-windows-msvc
+            if [ "$RUNNER_ARCH" = ARM64 ]; then host=aarch64-pc-windows-msvc; fi
+            args+=(--default-host "$host")
+          fi
+          curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs |
+            sh -s -- "${args[@]}"
+          hash -r
+        fi
+
+        rustup_is_current() {
+          local version pattern
+          version="$(RUSTUP_AUTO_INSTALL=0 rustup --version)"
+          pattern='^rustup[[:space:]]+([0-9]+)\.([0-9]+)\.([0-9]+)'
+          [[ "$version" =~ $pattern ]] &&
+            { [ "${BASH_REMATCH[1]}" -gt 1 ] ||
+              { [ "${BASH_REMATCH[1]}" -eq 1 ] && [ "${BASH_REMATCH[2]}" -ge 28 ]; }; }
+        }
+        if ! rustup_is_current; then
+          rustup self update
+          hash -r
+          if ! rustup_is_current; then
+            echo "::error::Rustup 1.28.0 or newer is required."
+            exit 1
+          fi
+        fi
+      shell: bash
+
     - name: Install Rust toolchain
-      uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2
-      with:
-        cache: 'false'
-        matcher: 'false'
-        build-warnings: ''
+      working-directory: ${{ github.workspace }}
+      run: rustup toolchain install --no-self-update
+      shell: bash
 
     - name: Install additional Rust toolchain
       if: ${{ inputs.additional-toolchain-directory != '' }}
-      uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2
-      with:
-        rust-src-dir: ${{ inputs.additional-toolchain-directory }}
-        cache: 'false'
-        matcher: 'false'
-        build-warnings: ''
+      working-directory: ${{ github.workspace }}
+      run: |
+        cd -- "$ADDITIONAL_TOOLCHAIN_DIRECTORY"
+        rustup toolchain install --no-self-update
+      shell: bash
+      env:
+        ADDITIONAL_TOOLCHAIN_DIRECTORY: ${{ inputs.additional-toolchain-directory }}
 
     - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4
       with:
