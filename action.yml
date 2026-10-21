@@ -15,61 +15,13 @@ runs:
   using: composite
   steps:
 
-    - name: Ensure Homebrew is available (macOS)
+    - name: Set up user-local Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       run: |
-        find_brew() {
-          local candidate
-          if candidate="$(command -v brew)" && [ -x "$candidate" ]; then
-            echo "$candidate"
-            return 0
-          fi
-          for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-            if [ -x "$candidate" ]; then
-              echo "$candidate"
-              return 0
-            fi
-          done
-          return 1
-        }
-
-        brew_is_writable() {
-          prefix="$("$brew" --prefix)" || return 1
-          repository="$("$brew" --repository)" || return 1
-          for directory in "$prefix" "$repository" \
-              "$prefix/Cellar" "$prefix/Frameworks" "$prefix/bin" \
-              "$prefix/etc" "$prefix/etc/bash_completion.d" \
-              "$prefix/include" "$prefix/lib" "$prefix/lib/pkgconfig" \
-              "$prefix/opt" "$prefix/sbin" "$prefix/share" \
-              "$prefix/share/doc" "$prefix/share/man" \
-              "$prefix/share/man/man1" "$prefix/share/man/man3" \
-              "$prefix/share/man/man5" "$prefix/share/man/man7" \
-              "$prefix/share/zsh" "$prefix/share/zsh/site-functions" \
-              "$prefix/var/homebrew" "$prefix/var/homebrew/linked" \
-              "$prefix/var/homebrew/locks"; do
-            if [ -e "$directory" ] && [ ! -w "$directory" ]; then
-              echo "Homebrew directory is not writable: $directory" >&2
-              return 1
-            fi
-          done
-        }
-
-        if ! brew="$(find_brew)" || ! brew_is_writable; then
-          echo "Installing or repairing Homebrew for $(id -un)."
-          installer="$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          NONINTERACTIVE=1 /bin/bash -c "$installer"
-          if ! brew="$(find_brew)"; then
-            echo "::error::Homebrew installer completed but brew was not found."
-            exit 1
-          fi
+        prefix="$HOME/.homebrew"
+        if [ ! -x "$prefix/bin/brew" ]; then
+          git clone --depth=1 https://github.com/Homebrew/brew.git "$prefix"
         fi
-
-        if ! brew_is_writable; then
-          echo "::error::Homebrew is still not writable after running its installer. Check runner sudo permissions and Homebrew ownership."
-          exit 1
-        fi
-
-        prefix="$("$brew" --prefix)"
         printf '%s\n' "$prefix/bin" "$prefix/sbin" >> "$GITHUB_PATH"
       shell: bash
 
