@@ -80,35 +80,22 @@ runs:
       if: ${{ (runner.os == 'Linux') }}
       run: |
         if command -v apt > /dev/null 2>&1; then
-          if [ -d "/usr/lib/llvm-18" ]; then
-            echo "clang 18 and llvm 18 already installed"
+          if [ -x /usr/lib/llvm-18/bin/clang ] && [ -x /usr/lib/llvm-18/bin/ld.lld ]; then
+            echo "clang 18 and lld 18 already installed"
           else
-            wget https://apt.llvm.org/llvm.sh 
-            chmod +x ./llvm.sh
-            sudo ./llvm.sh 18 clang clang-tools-extra
+            # apt.llvm.org has no LLVM 18 for Ubuntu 26.04 and later. The Ubuntu archive has it.
+            sudo apt-get update
+            # A stalled mirror can otherwise hang the job until its timeout.
+            if ! sudo timeout 600 apt-get -o Acquire::Retries=3 install -y clang-18 lld-18; then
+              wget https://apt.llvm.org/llvm.sh
+              chmod +x ./llvm.sh
+              sudo ./llvm.sh 18
+            fi
           fi
 
-          if [ -f /usr/lib/llvm-18/bin/clang ]; then
-            if [ ! -L /usr/bin/clang ]; then
-                sudo ln -s /usr/lib/llvm-18/bin/clang /usr/bin/clang
-            else
-                echo "clang already linked"
-            fi 
-          else
-            echo "Error: /usr/lib/llvm-18/bin/clang does not exist."
-            exit 1
-          fi
-
-          if [ -f /usr/lib/llvm-18/bin/ld.lld ]; then
-            if [ ! -L /usr/bin/ld.lld ]; then
-                sudo ln -s /usr/lib/llvm-18/bin/ld.lld /usr/bin/ld.lld
-            else
-                echo "ld.lld already linked"
-            fi 
-          else
-            echo "Error: /usr/lib/llvm-18/bin/ld.lld does not exist."
-            exit 1
-          fi
+          # Runner images can link clang and ld.lld to a newer default LLVM.
+          sudo ln -sf /usr/lib/llvm-18/bin/clang /usr/bin/clang
+          sudo ln -sf /usr/lib/llvm-18/bin/ld.lld /usr/bin/ld.lld
           clang --version
           ld.lld --version
         fi
