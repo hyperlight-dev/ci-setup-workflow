@@ -48,7 +48,7 @@ This action performs the following steps:
 - Installs an additional toolchain when requested.
 - Installs the requested components and targets.
 - Installs Just.
-- Sets up the clang toolchain on Linux.
+- Sets up Clang and LLD 23 only on apt-based Linux ARM64 (aarch64) runners. It should already be in the images for other os/architectures
 - Enables the Windows Hypervisor Platform on Windows.
 - Sets up environment variables needed to build / run tests based on the machine's configuration. 
 
