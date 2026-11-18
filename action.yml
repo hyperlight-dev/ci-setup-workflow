@@ -52,50 +52,22 @@ runs:
       with:
         just-version: ${{ inputs.just-version }}
 
-    ### Linux setup ###
-
-    - name: Install clang-tools (Linux mariner)
-      if: ${{ (runner.os == 'Linux') }}
-      run: |
-        if command -v dnf > /dev/null 2>&1; then
-          if command -v clang > /dev/null 2>&1; then
-            echo "clang already installed"
-          else
-            sudo dnf remove clang -y || true
-            sudo dnf install clang -y
-            sudo dnf install clang-tools-extra -y
-          fi
-          if command -v lld > /dev/null 2>&1; then
-            echo "lld already installed"
-          else
-            sudo dnf remove lld -y || true
-            sudo dnf install lld -y
-          fi
-          clang --version
-          ld.lld --version
-        fi
-      shell: bash
-
     - name: Install clang-tools (Linux ubuntu)
-      if: ${{ (runner.os == 'Linux') }}
+      if: ${{ runner.os == 'Linux' && runner.arch == 'ARM64' }}
       run: |
         if command -v apt > /dev/null 2>&1; then
-          if [ -x /usr/lib/llvm-18/bin/clang ] && [ -x /usr/lib/llvm-18/bin/ld.lld ]; then
-            echo "clang 18 and lld 18 already installed"
+          llvm_version=23
+          if [ -x "/usr/lib/llvm-$llvm_version/bin/clang" ] && [ -x "/usr/lib/llvm-$llvm_version/bin/ld.lld" ]; then
+            echo "clang $llvm_version and lld $llvm_version already installed"
           else
-            # apt.llvm.org has no LLVM 18 for Ubuntu 26.04 and later. The Ubuntu archive has it.
-            sudo apt-get update
-            # A stalled mirror can otherwise hang the job until its timeout.
-            if ! sudo timeout 600 apt-get -o Acquire::Retries=3 install -y clang-18 lld-18; then
-              wget https://apt.llvm.org/llvm.sh
-              chmod +x ./llvm.sh
-              sudo ./llvm.sh 18
-            fi
+            wget -O "$RUNNER_TEMP/llvm.sh" https://apt.llvm.org/llvm.sh
+            chmod +x "$RUNNER_TEMP/llvm.sh"
+            sudo "$RUNNER_TEMP/llvm.sh" "$llvm_version"
           fi
 
           # Runner images can link clang and ld.lld to a newer default LLVM.
-          sudo ln -sf /usr/lib/llvm-18/bin/clang /usr/bin/clang
-          sudo ln -sf /usr/lib/llvm-18/bin/ld.lld /usr/bin/ld.lld
+          sudo ln -sf "/usr/lib/llvm-$llvm_version/bin/clang" /usr/bin/clang
+          sudo ln -sf "/usr/lib/llvm-$llvm_version/bin/ld.lld" /usr/bin/ld.lld
           clang --version
           ld.lld --version
         fi
